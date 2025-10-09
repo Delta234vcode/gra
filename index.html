@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Big Life: Ticket Match</title>
+    
+    <!-- Tailwind CSS for styling --><script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts: Inter --><link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    
+    <!-- Tone.js for sound effects --><script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.7.77/Tone.js"></script>
+    
+    <!-- Telegram Web App script --><script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        /* Custom styles and animations */
+        :root {
+            --bg: #0b0f1a;
+            --text: #E5E7EB;
+            --primary: #21F2A4;
+            --accent: #8B5CF6;
+            --info: #0EA5E9;
+            --danger: #EF4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overscroll-behavior: none;
+        }
+        
+        /* Neon effect for text and buttons */
+        .neon-text {
+            text-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary), 0 0 15px var(--primary);
+        }
+        .neon-button {
+            box-shadow: 0 0 5px var(--accent), 0 0 10px var(--accent), inset 0 0 5px var(--accent);
+            transition: all 0.2s ease-in-out;
+        }
+        .neon-button:hover {
+            box-shadow: 0 0 8px var(--accent), 0 0 15px var(--accent), inset 0 0 8px var(--accent);
+            transform: scale(1.05);
+        }
+
+        /* Game grid styles */
+        #game-grid {
+            display: grid;
+            touch-action: none; /* Disable panning/zooming on the grid */
+        }
+        
+        .tile {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: clamp(24px, 7vw, 40px);
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.12s ease-in-out;
+        }
+
+        .tile.selected {
+            transform: scale(1.1);
+            background-color: rgba(33, 242, 164, 0.2);
+            border-radius: 20%;
+        }
+        
+        .tile.power-ticket::after {
+            content: '✨';
+            position: absolute;
+            font-size: 0.5em;
+            top: 0;
+            right: 0;
+            animation: pulse 1s infinite;
+        }
+        
+        .tile.mega-ticket::after {
+            content: '💥';
+            position: absolute;
+            font-size: 0.6em;
+            bottom: 0;
+            left: 0;
+            animation: pulse 1.2s infinite;
+        }
+
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+
+        @keyframes slideInUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        .slide-in-up { animation: slideInUp 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94); }
+        
+        @keyframes match-pop {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.15); opacity: 0.8; }
+            100% { transform: scale(0); opacity: 0; }
+        }
+        .tile.matched { animation: match-pop 0.18s ease-out forwards; }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-3px); }
+            75% { transform: translateX(3px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out; }
+
+        @keyframes nod {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(5deg); }
+        }
+        .nod { animation: nod 0.5s ease-in-out; }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        .breathe { animation: breathe 3s infinite ease-in-out; }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.2); opacity: 0.7; }
+        }
+
+        /* Particle effect container */
+        .particle {
+            position: absolute;
+            background-color: var(--primary);
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            animation-duration: 0.5s;
+            animation-timing-function: ease-out;
+            animation-fill-mode: forwards;
+        }
+        
+        /* Modal styles */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 50;
+        }
+        .modal-content {
+            background-color: var(--bg);
+            border: 2px solid var(--accent);
+            box-shadow: 0 0 20px var(--accent);
+        }
+
+        /* Background gradients for levels */
+        #game-screen.level-1 { background-image: radial-gradient(circle at top, rgba(139, 92, 246, 0.2) 0%, transparent 40%), linear-gradient(180deg, #1e293b 0%, var(--bg) 100%); }
+        #game-screen.level-2 { background-image: radial-gradient(circle at top, rgba(239, 68, 68, 0.2) 0%, transparent 40%), linear-gradient(180deg, #1e293b 0%, var(--bg) 100%); }
+        #game-screen.level-3 { background-image: radial-gradient(circle at top, rgba(33, 242, 164, 0.2) 0%, transparent 40%), linear-gradient(180deg, #1e293b 0%, var(--bg) 100%); }
+        #game-screen.win-screen {
+            background-image: url('https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif');
+            background-size: cover;
+            background-position: center;
+        }
+
+        /* Custom Security Avatar CSS */
+        #security-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: top;
+        }
+    </style>
+</head>
+<body class="overflow-hidden">
+
+    <!-- App Container --><div id="app-container" class="w-screen h-screen max-w-full max-h-full">
+
+        <!-- Loading Screen --><div id="loading-screen" class="w-full h-full flex flex-col items-center justify-center fade-in">
+            <h1 class="text-4xl font-black neon-text">Big Life</h1>
+            <p class="text-lg text-slate-400">Ticket Match</p>
+            <div class="w-1/2 h-2 mt-8 bg-slate-700 rounded-full overflow-hidden">
+                <div id="loading-bar" class="h-full bg-gradient-to-r from-purple-500 to-green-400" style="width: 0%;"></div>
+            </div>
+        </div>
+        
+        <!-- Start Screen --><div id="start-screen" class="w-full h-full flex-col items-center justify-center p-8 text-center hidden">
+             <h1 class="text-5xl font-black neon-text">Big Life</h1>
+            <p class="text-2xl text-slate-300 mb-8">Ticket Match</p>
+            <p class="mb-12 max-w-md" data-i18n="start_prompt">Match tickets to get into the concert. Pass 3 security levels to win!</p>
+            <button id="start-button" class="px-12 py-4 text-2xl font-bold rounded-lg bg-purple-600 text-white neon-button" data-i18n="play">Start</button>
+            <div class="mt-8 flex gap-4">
+                <button class="lang-btn p-2 rounded-md border-2 border-slate-600" data-lang="ua">UA</button>
+                <button class="lang-btn p-2 rounded-md border-2 border-slate-600" data-lang="en">EN</button>
+                <button class="lang-btn p-2 rounded-md border-2 border-slate-600" data-lang="ru">RU</button>
+                <button class="lang-btn p-2 rounded-md border-2 border-slate-600" data-lang="he">HE</button>
+            </div>
+        </div>
+
+        <!-- Game Screen --><div id="game-screen" class="w-full h-full flex flex-col md:flex-row p-2 md:p-4 gap-4 hidden">
+            <!-- Security Panel --><div id="security-panel" class="w-full md:w-1/3 flex-shrink-0 bg-slate-900/50 rounded-lg flex flex-col overflow-hidden">
+                <div id="security-avatar" class="w-full aspect-square breathe">
+                    <img id="security-guard-image" src="https://files.catbox.moe/eem51t.png" alt="Security Guard">
+                </div>
+                <div class="w-full bg-slate-800/70 p-3 text-center flex items-center justify-center">
+                    <p id="security-line" class="text-sm md:text-base"></p>
+                </div>
+            </div>
+
+            <!-- Game Panel --><div class="flex-1 flex flex-col min-w-0">
+                <!-- HUD --><div id="hud" class="w-full grid grid-cols-3 gap-2 mb-2 text-center">
+                    <div class="bg-slate-900/50 rounded-lg p-2">
+                        <span class="text-xs uppercase text-slate-400" data-i18n="score">Score</span>
+                        <p id="score-value" class="text-xl font-bold">0</p>
+                    </div>
+                    <div class="bg-slate-900/50 rounded-lg p-2">
+                        <span id="moves-time-label" class="text-xs uppercase text-slate-400" data-i18n="moves">Moves</span>
+                        <p id="moves-time-value" class="text-xl font-bold">25</p>
+                    </div>
+                    <div class="bg-slate-900/50 rounded-lg p-2">
+                        <span class="text-xs uppercase text-slate-400" data-i18n="level">Level</span>
+                        <p id="level-value" class="text-xl font-bold">1</p>
+                    </div>
+                </div>
+                <!-- Game Grid --><div id="game-grid-container" class="flex-1 w-full h-full flex items-center justify-center aspect-square relative">
+                    <div id="game-grid" class="w-full h-full bg-slate-800/50 rounded-lg p-1 aspect-square"></div>
+                    <div id="combo-multiplier" class="absolute top-2 right-2 text-2xl font-black text-yellow-300" style="display: none; text-shadow: 2px 2px 2px #000;"></div>
+                </div>
+                 <div class="flex justify-center items-center gap-4 mt-2">
+                    <button id="sound-toggle" class="p-2 bg-slate-900/50 rounded-lg">🔊</button>
+                    <button id="close-button" class="p-2 bg-slate-900/50 rounded-lg" data-i18n="close">Close</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal --><div id="modal" class="modal-backdrop hidden fade-in">
+            <div id="modal-content" class="modal-content p-8 rounded-lg text-center w-11/12 max-w-sm slide-in-up">
+                <h2 id="modal-title" class="text-3xl font-bold mb-4"></h2>
+                <p id="modal-body" class="text-lg mb-6"></p>
+                <div id="modal-buttons" class="flex justify-center gap-4"></div>
+            </div>
+        </div>
+
+    </div>
+
+    <script type="module">
+        // --- TELEGRAM WEB APP INTEGRATION ---
+        try {
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
+            Telegram.WebApp.setHeaderColor('#0b0f1a');
+            Telegram.WebApp.setBackgroundColor('#0b0f1a');
+        } catch (e) {
+            console.warn("Telegram WebApp script not found or failed. Running in browser mode.");
+        }
+
+        // --- GAME CONSTANTS & CONFIG ---
+        const TILE_TYPES = ['ticket', 'headphones', 'mic', 'note', 'gem'];
+        const TILE_EMOJIS = {
+            ticket: '🎟️', headphones: '🎧', mic: '🎤', note: '🎶', gem: '💎',
+            power: '🎟️', mega: '🎟️'
+        };
+        const LEVEL_CONFIG = [
+            { target: 100, moves: 25, timer: null, background: 'level-1' },
+            { target: 150, moves: 25, timer: null, background: 'level-2' },
+            { target: 200, moves: null, timer: 30, background: 'level-3' },
+        ];
+
+        // --- DOM ELEMENTS ---
+        const DOMElements = {
+            loadingScreen: document.getElementById('loading-screen'),
+            loadingBar: document.getElementById('loading-bar'),
+            startScreen: document.getElementById('start-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            securityPanel: document.getElementById('security-panel'),
+            securityAvatar: document.getElementById('security-avatar'),
+            securityLine: document.getElementById('security-line'),
+            scoreValue: document.getElementById('score-value'),
+            movesTimeLabel: document.getElementById('moves-time-label'),
+            movesTimeValue: document.getElementById('moves-time-value'),
+            levelValue: document.getElementById('level-value'),
+            grid: document.getElementById('game-grid'),
+            comboMultiplier: document.getElementById('combo-multiplier'),
+            modal: document.getElementById('modal'),
+            modalTitle: document.getElementById('modal-title'),
+            modalBody: document.getElementById('modal-body'),
+            modalButtons: document.getElementById('modal-buttons'),
+            soundToggle: document.getElementById('sound-toggle'),
+            closeButton: document.getElementById('close-button'),
+            startButton: document.getElementById('start-button'),
+        };
+
+        // --- GAME STATE ---
+        let state = {
+            gridSize: 6,
+            board: [],
+            selectedTile: null,
+            score: 0,
+            currentLevel: 0,
+            movesLeft: 0,
+            timeLeft: 0,
+            isLocked: true,
+            timerInterval: null,
+            comboCount: 0,
+            comboTimeout: null,
+            settings: {
+                sound: true,
+                lang: 'ua',
+            },
+            dynamicStyleSheet: null,
+        };
+        
+        // --- LOCALIZATION ---
+        const locales = {
+            ua: {
+                play: "Грати", start_prompt: "Збирай квитки, щоб потрапити на концерт. Пройди 3 рівні охорони, щоб перемогти!",
+                score: "Рахунок", moves: "Ходи", level: "Рівень", time: "Час",
+                close: "Закрити",
+                level_complete: "Рівень пройдено!", level_fail: "Не вдалося", you_win: "Вітаємо!",
+                target_moves: "Ціль: {target} очок за {moves} ходів.", target_time: "Ціль: {target} очок за {time} секунд.",
+                fail_moves: "Закінчилися ходи. Спробуйте ще раз!", fail_time: "Час вийшов. Спробуйте ще раз!",
+                next_level: "Наступний рівень", replay: "Зіграти ще раз", watch_concert: "Дивитись концерт",
+                sec_l1_start: "Черга рухається. Покажи, що ти свій — збери квитки!", 
+                sec_l1_low_score: "Твої квитки недостатньо цінні. Постарайся краще!", 
+                sec_l1_progress: "Непогано, але ще не досить. Проходь далі!",
+                sec_l1_nearly_there: "Майже пройшов! Ще трохи, і ти всередині.",
+                sec_l1_ok: "Добре! Вхід вільний. Насолоджуйся шоу!",
+
+                sec_l2_start: "Другий кордон. Тут лише найкращі. Покажи свій рівень!",
+                sec_l2_low_score: "Тут не дитячий садок. Набирай більше очок!", 
+                sec_l2_progress: "Я вже бачив і кращих. Продовжуй!",
+                sec_l2_nearly_there: "Вражаєш! Ще трохи, і ти пройшов.",
+                sec_l2_ok: "Фантастика! Можеш проходити. Наступний рівень чекає!",
+                
+                sec_l3_start: "Це останній кордон. Залишився фінальний ривок, час обмежений!",
+                sec_l3_low_score: "Час минає, а ти ще тут? Поспішай!",
+                sec_l3_progress: "Годинник цокає. Ти встигнеш?",
+                sec_l3_nearly_there: "Залишилось зовсім небагато. Не зупиняйся!",
+                sec_l3_ok: "Що ж, ти мене вразив! Вітаємо, ти пройшов!",
+                
+                sec_win: "Ласкаво просимо на Backstage, зірка! Ти це зробив!",
+            },
+            en: {
+                play: "Play", start_prompt: "Match tickets to get into the concert. Pass 3 security levels to win!",
+                score: "Score", moves: "Moves", level: "Level", time: "Time",
+                close: "Close",
+                level_complete: "Level Complete!", level_fail: "Try Again", you_win: "You Win!",
+                target_moves: "Target: {target} points in {moves} moves.", target_time: "Target: {target} points in {time} seconds.",
+                fail_moves: "Out of moves. Better luck next time!", fail_time: "Time's up! Better luck next time!",
+                next_level: "Next Level", replay: "Replay", watch_concert: "Watch the Concert",
+                sec_l1_start: "The queue is moving. Show you belong—collect tickets!", 
+                sec_l1_low_score: "Your tickets aren't valuable enough. Try harder!",
+                sec_l1_progress: "Not bad, but not quite there. Keep going!",
+                sec_l1_nearly_there: "Almost there! A little more and you're in.",
+                sec_l1_ok: "Alright! You're cleared. Enjoy the show!",
+
+                sec_l2_start: "Second checkpoint. Only the best get through. Show me what you've got!",
+                sec_l2_low_score: "This isn't a playground. Rack up more points!",
+                sec_l2_progress: "I've seen better. Keep trying!",
+                sec_l2_nearly_there: "Impressive! Just a bit more and you're through.",
+                sec_l2_ok: "Fantastic! You may proceed. Next level awaits!",
+
+                sec_l3_start: "This is the final checkpoint. One last push, time is limited!",
+                sec_l3_low_score: "Time's running out and you're still here? Hurry up!",
+                sec_l3_progress: "The clock is ticking. Will you make it?",
+                sec_l3_nearly_there: "You're so close. Don't stop now!",
+                sec_l3_ok: "Well, you've impressed me! Congratulations, you're through!",
+
+                sec_win: "Welcome to the Backstage, star! You made it!",
+            },
+            ru: {
+                play: "Играть", start_prompt: "Собирай билеты, чтобы попасть на концерт. Пройди 3 уровня охраны для победы!",
+                score: "Счет", moves: "Ходы", level: "Уровень", time: "Время",
+                close: "Закрыть",
+                level_complete: "Уровень пройден!", level_fail: "Неудача", you_win: "Поздравляем!",
+                target_moves: "Цель: {target} очков за {moves} ходов.", target_time: "Цель: {target} очков за {time} секунд.",
+                fail_moves: "Закончились ходы. Попробуйте еще раз!", fail_time: "Время вышло. Попробуйте еще раз!",
+                next_level: "Следующий уровень", replay: "Сыграть еще раз", watch_concert: "Смотреть концерт",
+                sec_l1_start: "Очередь движется. Покажи, что ты свой — собери билеты!",
+                sec_l1_low_score: "Твои билеты недостаточно ценны. Постарайся лучше!",
+                sec_l1_progress: "Неплохо, но пока недостаточно. Продолжай!",
+                sec_l1_nearly_there: "Почти прошел! Еще немного, и ты внутри.",
+                sec_l1_ok: "Хорошо! Вход свободен. Наслаждайся шоу!",
+
+                sec_l2_start: "Второй кордон. Здесь только лучшие. Покажи свой уровень!",
+                sec_l2_low_score: "Здесь не детский сад. Набирай больше очков!",
+                sec_l2_progress: "Я видел и получше. Продолжай!",
+                sec_l2_nearly_there: "Впечатляешь! Еще чуть-чуть, и ты прошел.",
+                sec_l2_ok: "Фантастика! Можешь проходить. Следующий уровень ждет!",
+
+                sec_l3_start: "Это последний кордон. Остался финальный рывок, время ограничено!",
+                sec_l3_low_score: "Время истекает, а ты еще здесь? Поторопись!",
+                sec_l3_progress: "Часы тикают. Успеешь?",
+                sec_l3_nearly_there: "Осталось совсем немного. Не останавливайся!",
+                sec_l3_ok: "Что ж, ты меня впечатлил! Поздравляю, ты прошел!",
+
+                sec_win: "Добро пожаловать на Backstage, звезда! Ты это сделал!",
+            },
+            he: {
+                play: "שחק", start_prompt: "התאם כרטיסים כדי להיכנס להופעה. עברו 3 רמות אבטחה כדי לנצח!",
+                score: "ניקוד", moves: "מהלכים", level: "שלב", time: "זמן",
+                close: "סגור",
+                level_complete: "שלב הושלם!", level_fail: "נסה שוב", you_win: "ניצחת!",
+                target_moves: "מטרה: {target} נקודות ב-{moves} מהלכים.", target_time: "מטרה: {target} נקודות ב-{time} שניות.",
+                fail_moves: "נגמרו המהלכים. נסה שוב!", fail_time: "הזמן נגמר. נסה שוב!",
+                next_level: "שלב הבא", replay: "שחק שוב", watch_concert: "צפה בהופעה",
+                sec_l1_start: "התור זז. הראה שאתה שייך - אסוף כרטיסים!",
+                sec_l1_low_score: "הכרטיסים שלך לא מספיק יקרים. נסה חזק יותר!",
+                sec_l1_progress: "לא רע, אבל לא ממש שם. תמשיך!",
+                sec_l1_nearly_there: "כמעט שם! עוד קצת ואתה בפנים.",
+                sec_l1_ok: "בסדר גמור! אתה רשאי להיכנס. תיהנה מההופעה!",
+
+                sec_l2_start: "מחסום שני. רק הטובים ביותר עוברים. הראה לי מה יש לך!",
+                sec_l2_low_score: "זה לא גן ילדים. צבור יותר נקודות!",
+                sec_l2_progress: "ראיתי טובים יותר. תמשיך לנסות!",
+                sec_l2_nearly_there: "מרשים! עוד קצת ואתה עובר.",
+                sec_l2_ok: "פנטסטי! אתה יכול להמשיך. השלב הבא מחכה!",
+
+                sec_l3_start: "זוהי המחסום האחרון. נותרה דחיפה אחרונה, הזמן מוגבל!",
+                sec_l3_low_score: "הזמן אוזל ואתה עדיין כאן? תזדרז!",
+                sec_l3_progress: "השעון מתקתק. תספיק?",
+                sec_l3_nearly_there: "אתה כל כך קרוב. אל תעצור עכשיו!",
+                sec_l3_ok: "טוב, הרשמת אותי! מזל טוב, עברת!",
+
+                sec_win: "ברוך הבא לבאקסטייג', כוכב! עשית את זה!",
+            },
+        };
+
+        function t(key, replacements = {}) {
+            let translation = locales[state.settings.lang][key] || key;
+            for (const placeholder in replacements) {
+                translation = translation.replace(`{${placeholder}}`, replacements[placeholder]);
+            }
+            return translation;
+        }
+
+        function applyLocalization() {
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                el.textContent = t(el.dataset.i18n);
+            });
+            const isRTL = state.settings.lang === 'he';
+            document.documentElement.dir = isRTL ? 'rtl' : 'ltr';
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.toggle('border-primary', btn.dataset.lang === state.settings.lang);
+                btn.classList.toggle('border-slate-600', btn.dataset.lang !== state.settings.lang);
+            });
+        }
+        
+        // --- SECURITY AVATAR SVGs ---
+        // This is no longer needed as we are using an image.
+        
+        // --- SOUND ENGINE ---
+        const sounds = {};
+        function initSounds() {
+            sounds.swap = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
+            sounds.match = new Tone.Synth({ oscillator: { type: 'triangle' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination();
+            sounds.win = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.1, decay: 0.5, sustain: 0.2, release: 0.5 } }).toDestination();
+            sounds.fail = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination();
+        }
+        function playSound(sound) {
+            if (!state.settings.sound || !sounds[sound]) return;
+            switch(sound) {
+                case 'swap': sounds.swap.triggerAttackRelease('C5', '8n'); break;
+                case 'match': sounds.match.triggerAttackRelease('G5', '8n', Tone.now() + state.comboCount * 0.05); break;
+                case 'win':
+                    const now = Tone.now();
+                    sounds.win.triggerAttackRelease('C5', '8n', now);
+                    sounds.win.triggerAttackRelease('E5', '8n', now + 0.2);
+                    sounds.win.triggerAttackRelease('G5', '8n', now + 0.4);
+                    break;
+                case 'fail': sounds.fail.triggerAttackRelease('C3', '4n'); break;
+            }
+        }
+        
+        // --- UI & SCREEN MANAGEMENT ---
+        function showScreen(screen) {
+            DOMElements.loadingScreen.classList.add('hidden');
+            DOMElements.startScreen.classList.add('hidden');
+            DOMElements.gameScreen.classList.add('hidden');
+            screen.classList.remove('hidden');
+        }
+        
+        function updateSecurityPanel(status, lineKey = null, lineParams = {}) {
+            // Clear all animation classes first
+            DOMElements.securityAvatar.classList.remove('breathe', 'shake', 'nod');
+
+            // Apply animations based on status
+            if (status === 'idle') DOMElements.securityAvatar.classList.add('breathe');
+            if (status === 'angry') DOMElements.securityAvatar.classList.add('shake');
+            if (status === 'happy') DOMElements.securityAvatar.classList.add('nod');
+            
+            if (lineKey) {
+                DOMElements.securityLine.textContent = t(lineKey, lineParams);
+            }
+        }
+
+        function updateHUD() {
+            DOMElements.scoreValue.textContent = state.score;
+            DOMElements.levelValue.textContent = state.currentLevel + 1;
+            const config = LEVEL_CONFIG[state.currentLevel];
+            if (config.moves) {
+                DOMElements.movesTimeLabel.textContent = t('moves');
+                DOMElements.movesTimeValue.textContent = state.movesLeft;
+            } else {
+                DOMElements.movesTimeLabel.textContent = t('time');
+                DOMElements.movesTimeValue.textContent = state.timeLeft;
+            }
+
+            // Dynamic security line based on score progress
+            const target = config.target;
+            const progress = state.score / target;
+            let currentLevelKey = `sec_l${state.currentLevel + 1}`;
+
+            if (progress >= 1) {
+                updateSecurityPanel('happy', `${currentLevelKey}_ok`);
+            } else if (progress >= 0.75) {
+                 updateSecurityPanel('happy', `${currentLevelKey}_nearly_there`);
+            } else if (progress >= 0.3) {
+                updateSecurityPanel('idle', `${currentLevelKey}_progress`);
+            } else {
+                 // Keep initial message or a low score message
+                if (state.score > 0) { // Only show low_score message if player has actually scored
+                    updateSecurityPanel('angry', `${currentLevelKey}_low_score`);
+                } else {
+                    updateSecurityPanel('idle', `${currentLevelKey}_start`);
+                }
+            }
+        }
+        
+        function showModal({ titleKey, bodyKey, bodyParams, buttons }) {
+            DOMElements.modalTitle.textContent = t(titleKey);
+            DOMElements.modalBody.textContent = t(bodyKey, bodyParams);
+            DOMElements.modalButtons.innerHTML = '';
+            buttons.forEach(btn => {
+                const button = document.createElement('button');
+                button.textContent = t(btn.textKey);
+                button.className = 'px-6 py-2 text-lg font-bold rounded-lg bg-purple-600 text-white neon-button';
+                button.onclick = () => {
+                    DOMElements.modal.classList.add('hidden');
+                    btn.action();
+                };
+                DOMElements.modalButtons.appendChild(button);
+            });
+            DOMElements.modal.classList.remove('hidden');
+        }
+
+        // --- GAME LOGIC ---
+        function startLevel(levelIndex) {
+            state.currentLevel = levelIndex;
+            state.score = 0;
+            const config = LEVEL_CONFIG[levelIndex];
+            state.movesLeft = config.moves;
+            state.timeLeft = config.timer;
+
+            DOMElements.gameScreen.className = DOMElements.gameScreen.className.replace(/level-\d+/, '') + ` ${config.background}`;
+
+            setupGrid();
+            updateHUD(); // This will also set the initial security line
+            showScreen(DOMElements.gameScreen);
+            state.isLocked = false;
+            
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            if (config.timer) {
+                state.timerInterval = setInterval(() => {
+                    state.timeLeft--;
+                    updateHUD();
+                    if (state.timeLeft <= 0) {
+                        clearInterval(state.timerInterval);
+                        endLevel(false);
+                    }
+                }, 1000);
+            }
+        }
+        
+        function setupGrid() {
+            state.gridSize = window.innerWidth < 400 ? 5 : 6;
+            DOMElements.grid.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
+            DOMElements.grid.style.gridTemplateRows = `repeat(${state.gridSize}, 1fr)`;
+            state.board = [];
+            DOMElements.grid.innerHTML = '';
+
+            for (let r = 0; r < state.gridSize; r++) {
+                state.board[r] = [];
+                for (let c = 0; c < state.gridSize; c++) {
+                    let tileType;
+                    do {
+                        tileType = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+                    } while (
+                        (c >= 2 && state.board[r][c - 1]?.type === tileType && state.board[r][c - 2]?.type === tileType) ||
+                        (r >= 2 && state.board[r - 1][c]?.type === tileType && state.board[r - 2][c]?.type === tileType)
+                    );
+                    createTile(r, c, tileType);
+                }
+            }
+            if(!checkForPossibleMoves()) {
+                console.log("No initial moves, reshuffling...");
+                setupGrid();
+            }
+        }
+
+        function createTile(r, c, type, power = null) {
+            const tile = {
+                type,
+                power,
+                element: document.createElement('div'),
+            };
+            tile.element.className = 'tile';
+            tile.element.dataset.r = r;
+            tile.element.dataset.c = c;
+            tile.element.textContent = TILE_EMOJIS[power ? power : type];
+            if (power) tile.element.classList.add(`${power}-ticket`);
+            
+            DOMElements.grid.appendChild(tile.element);
+            state.board[r][c] = tile;
+        }
+
+        function handleTileClick(event) {
+            if (state.isLocked) return;
+            const target = event.target.closest('.tile');
+            if (!target) return;
+            
+            const r = parseInt(target.dataset.r);
+            const c = parseInt(target.dataset.c);
+
+            if (!state.selectedTile) {
+                state.selectedTile = { r, c, element: target };
+                target.classList.add('selected');
+                playSound('swap');
+            } else {
+                const prev = state.selectedTile;
+                prev.element.classList.remove('selected');
+                
+                // Check for adjacent swap
+                const isAdjacent = Math.abs(prev.r - r) + Math.abs(prev.c - c) === 1;
+                if (isAdjacent) {
+                    swapTiles(prev.r, prev.c, r, c);
+                }
+                state.selectedTile = null;
+            }
+        }
+
+        async function swapTiles(r1, c1, r2, c2) {
+            state.isLocked = true;
+            playSound('swap');
+            const tile1 = state.board[r1][c1];
+            const tile2 = state.board[r2][c2];
+
+            // DOM swap animation
+            const el1 = tile1.element;
+            const el2 = tile2.element;
+            const rect1 = el1.getBoundingClientRect();
+            const rect2 = el2.getBoundingClientRect();
+            
+            el1.style.transition = 'transform 0.2s ease-in-out';
+            el2.style.transition = 'transform 0.2s ease-in-out';
+            el1.style.transform = `translate(${rect2.left - rect1.left}px, ${rect2.top - rect1.top}px)`;
+            el2.style.transform = `translate(${rect1.left - rect2.left}px, ${rect1.top - rect2.top}px)`;
+
+            await new Promise(res => setTimeout(res, 200));
+
+            // Data swap
+            state.board[r1][c1] = tile2;
+            state.board[r2][c2] = tile1;
+            tile1.element.dataset.r = r2; tile1.element.dataset.c = c2;
+            tile2.element.dataset.r = r1; tile2.element.dataset.c = c1;
+
+            // Reset DOM position after visual swap
+            el1.style.transform = ''; el2.style.transform = '';
+            el1.style.transition = ''; el2.style.transition = '';
+            DOMElements.grid.innerHTML = '';
+            for(let r=0; r < state.gridSize; r++){
+                for(let c=0; c < state.gridSize; c++){
+                    DOMElements.grid.appendChild(state.board[r][c].element);
+                }
+            }
+            
+            const matches = findMatches();
+            if (matches.size > 0) {
+                if (LEVEL_CONFIG[state.currentLevel].moves) state.movesLeft--;
+                updateHUD();
+                await resolveMatches(matches);
+                if (state.movesLeft <= 0 && LEVEL_CONFIG[state.currentLevel].moves && state.score < LEVEL_CONFIG[state.currentLevel].target) {
+                    endLevel(false);
+                }
+            } else { // Rollback
+                await swapTiles(r2, c2, r1, c1);
+            }
+
+            if (!checkForPossibleMoves()) {
+                await reshuffleGrid();
+            }
+
+            state.isLocked = false;
+        }
+        
+        function findMatches() {
+            const matches = new Set();
+            // Horizontal
+            for (let r = 0; r < state.gridSize; r++) {
+                for (let c = 0; c < state.gridSize - 2; c++) {
+                    const tile1 = state.board[r][c];
+                    const tile2 = state.board[r][c + 1];
+                    const tile3 = state.board[r][c + 2];
+                    if (tile1 && tile2 && tile3 && tile1.type === tile2.type && tile2.type === tile3.type) {
+                        matches.add(tile1).add(tile2).add(tile3);
+                    }
+                }
+            }
+            // Vertical
+            for (let c = 0; c < state.gridSize; c++) {
+                for (let r = 0; r < state.gridSize - 2; r++) {
+                    const tile1 = state.board[r][c];
+                    const tile2 = state.board[r + 1][c];
+                    const tile3 = state.board[r + 2][c];
+                    if (tile1 && tile2 && tile3 && tile1.type === tile2.type && tile2.type === tile3.type) {
+                        matches.add(tile1).add(tile2).add(tile3);
+                    }
+                }
+            }
+            return matches;
+        }
+
+        async function activatePowerup(r, c, power) {
+            // Placeholder for powerup logic
+            console.log(`Activating ${power} at ${r},${c}`);
+            return Promise.resolve();
+        }
+
+        async function resolveMatches(matches, fromPowerup = false) {
+            state.isLocked = true;
+            if (!fromPowerup) startCombo();
+            
+            let scoreToAdd = 0;
+            
+            playSound('match');
+
+            for (const tile of matches) { 
+                const r = parseInt(tile.element.dataset.r);
+                const c = parseInt(tile.element.dataset.c);
+                if (state.board[r][c] === null) continue; 
+                
+                scoreToAdd += 10;
+                createParticles(tile.element);
+                
+                if (tile.power && !fromPowerup) { 
+                   await activatePowerup(r, c, tile.power);
+                }
+
+                tile.element.classList.add('matched');
+                state.board[r][c] = null;
+            }
+            
+            state.score += Math.floor(scoreToAdd * (1 + state.comboCount * 0.2));
+            updateHUD();
+
+            await new Promise(res => setTimeout(res, 200));
+            await cascadeAndRefill();
+
+            const newMatches = findMatches();
+            if (newMatches.size > 0) {
+                await resolveMatches(newMatches);
+            } else {
+                endCombo();
+                state.isLocked = false;
+                if(state.score >= LEVEL_CONFIG[state.currentLevel].target) {
+                    endLevel(true);
+                }
+            }
+        }
+        
+        function createParticles(element) {
+            const rect = element.getBoundingClientRect();
+            const containerRect = DOMElements.grid.getBoundingClientRect();
+            for (let i = 0; i < 10; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                const size = Math.random() * 5 + 2;
+                p.style.width = `${size}px`;
+                p.style.height = `${size}px`;
+                p.style.left = `${rect.left - containerRect.left + rect.width / 2}px`;
+                p.style.top = `${rect.top - containerRect.top + rect.height / 2}px`;
+
+                const angle = Math.random() * 360;
+                const distance = Math.random() * 40 + 20;
+                const tx = Math.cos(angle * Math.PI / 180) * distance;
+                const ty = Math.sin(angle * Math.PI / 180) * distance;
+                
+                const animationName = `particle-burst-${Date.now()}-${i}`;
+                p.style.animationName = animationName;
+                
+                const keyframes = `@keyframes ${animationName} {
+                    0% { transform: translate(0, 0) scale(1); opacity: 1; }
+                    100% { transform: translate(${tx}px, ${ty}px) scale(0); opacity: 0; }
+                }`;
+
+                if (state.dynamicStyleSheet.cssRules.length > 50) {
+                    state.dynamicStyleSheet.deleteRule(0);
+                }
+                state.dynamicStyleSheet.insertRule(keyframes, state.dynamicStyleSheet.cssRules.length);
+                
+                element.parentElement.appendChild(p);
+                setTimeout(() => p.remove(), 500);
+            }
+        }
+
+        async function cascadeAndRefill() {
+            // Cascade
+            for (let c = 0; c < state.gridSize; c++) {
+                let emptyRow = state.gridSize - 1;
+                for (let r = state.gridSize - 1; r >= 0; r--) {
+                    if (state.board[r][c] !== null) {
+                        if (r !== emptyRow) {
+                            state.board[emptyRow][c] = state.board[r][c];
+                            state.board[r][c] = null;
+                            state.board[emptyRow][c].element.dataset.r = emptyRow;
+                        }
+                        emptyRow--;
+                    }
+                }
+            }
+            
+            // Refill
+            for (let c = 0; c < state.gridSize; c++) {
+                for (let r = 0; r < state.gridSize; r++) {
+                    if (state.board[r][c] === null) {
+                        const type = TILE_TYPES[Math.floor(Math.random() * TILE_TYPES.length)];
+                        createTile(r, c, type);
+                    }
+                }
+            }
+
+            // Update DOM
+            DOMElements.grid.innerHTML = '';
+            for(let r=0; r < state.gridSize; r++){
+                for(let c=0; c < state.gridSize; c++){
+                    DOMElements.grid.appendChild(state.board[r][c].element);
+                }
+            }
+            await new Promise(res => setTimeout(res, 100));
+        }
+        
+        function checkForPossibleMoves() {
+            for (let r = 0; r < state.gridSize; r++) {
+                for (let c = 0; c < state.gridSize; c++) {
+                    // Check swap right
+                    if (c < state.gridSize - 1) {
+                        if (checkPotentialMatch(r, c, r, c + 1)) return true;
+                    }
+                    // Check swap down
+                    if (r < state.gridSize - 1) {
+                        if (checkPotentialMatch(r, c, r + 1, c)) return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function checkPotentialMatch(r1, c1, r2, c2) {
+            const temp = state.board[r1][c1];
+            state.board[r1][c1] = state.board[r2][c2];
+            state.board[r2][c2] = temp;
+
+            const hasMatch = (
+                (c1 > 1 && state.board[r1][c1-1]?.type === state.board[r1][c1-2]?.type && state.board[r1][c1-1]?.type === state.board[r1][c1].type) ||
+                (c1 < state.gridSize - 2 && state.board[r1][c1+1]?.type === state.board[r1][c1+2]?.type && state.board[r1][c1+1]?.type === state.board[r1][c1].type) ||
+                (r1 > 1 && state.board[r1-1][c1]?.type === state.board[r1-2][c1]?.type && state.board[r1-1][c1]?.type === state.board[r1][c1].type) ||
+                (r1 < state.gridSize - 2 && state.board[r1+1][c1]?.type === state.board[r1+2][c1]?.type && state.board[r1+1][c1]?.type === state.board[r1][c1].type) ||
+                (c2 > 1 && state.board[r2][c2-1]?.type === state.board[r2][c2-2]?.type && state.board[r2][c2-1]?.type === state.board[r2][c2].type) ||
+                (c2 < state.gridSize - 2 && state.board[r2][c2+1]?.type === state.board[r2][c2+2]?.type && state.board[r2][c2+1]?.type === state.board[r2][c2].type) ||
+                (r2 > 1 && state.board[r2-1][c2]?.type === state.board[r2-2][c2]?.type && state.board[r2-1][c2]?.type === state.board[r2][c2].type) ||
+                (r2 < state.gridSize - 2 && state.board[r2+1][c2]?.type === state.board[r2+2][c2]?.type && state.board[r2+1][c2]?.type === state.board[r2][c2].type)
+            );
+            
+            // Swap back
+            state.board[r2][c2] = state.board[r1][c1];
+            state.board[r1][c1] = temp;
+            
+            return hasMatch;
+        }
+
+        async function reshuffleGrid() {
+            state.isLocked = true;
+            DOMElements.grid.classList.add('shake');
+            await new Promise(res => setTimeout(res, 500));
+            DOMElements.grid.classList.remove('shake');
+            setupGrid();
+            state.isLocked = false;
+        }
+        
+        function startCombo() {
+            clearTimeout(state.comboTimeout);
+            state.comboCount++;
+            DOMElements.comboMultiplier.textContent = `x${(1 + state.comboCount * 0.2).toFixed(1)}`;
+            DOMElements.comboMultiplier.style.display = 'block';
+            state.comboTimeout = setTimeout(endCombo, 1200);
+        }
+        
+        function endCombo() {
+            state.comboCount = 0;
+            DOMElements.comboMultiplier.style.display = 'none';
+        }
+        
+        function endLevel(isWin) {
+            state.isLocked = true;
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            
+            if(isWin) {
+                playSound('win');
+                if (state.currentLevel >= LEVEL_CONFIG.length - 1) {
+                    // Final win
+                     DOMElements.gameScreen.classList.add('win-screen');
+                    updateSecurityPanel('happy', 'sec_win');
+                    setTimeout(() => {
+                        showModal({
+                            titleKey: 'you_win',
+                            bodyKey: 'sec_win',
+                            buttons: [
+                                { textKey: 'watch_concert', action: () => { window.open('https://big-life.org/', '_blank'); startLevel(0); }},
+                                { textKey: 'replay', action: () => startLevel(0) }
+                            ]
+                        });
+                        DOMElements.gameScreen.classList.remove('win-screen');
+                    }, 2000);
+                } else {
+                    // Next level
+                    const config = LEVEL_CONFIG[state.currentLevel + 1];
+                    updateSecurityPanel('happy', `sec_l${state.currentLevel + 1}_ok`);
+                    showModal({
+                        titleKey: 'level_complete',
+                        bodyKey: config.moves ? 'target_moves' : 'target_time',
+                        bodyParams: { target: config.target, moves: config.moves, time: config.timer },
+                        buttons: [{ textKey: 'next_level', action: () => startLevel(state.currentLevel + 1) }]
+                    });
+                }
+            } else {
+                playSound('fail');
+                updateSecurityPanel('angry', `sec_l${state.currentLevel + 1}_low_score`);
+                const config = LEVEL_CONFIG[state.currentLevel];
+                showModal({
+                    titleKey: 'level_fail',
+                    bodyKey: config.moves ? 'fail_moves' : 'fail_time',
+                    buttons: [{ textKey: 'replay', action: () => startLevel(state.currentLevel) }]
+                });
+            }
+        }
+
+        // --- EVENT LISTENERS & INITIALIZATION ---
+        function init() {
+            // Create a stylesheet for dynamic keyframes to avoid security errors
+            const styleEl = document.createElement('style');
+            document.head.appendChild(styleEl);
+            state.dynamicStyleSheet = styleEl.sheet;
+            
+            // Settings
+            const savedSettings = localStorage.getItem('biglife_settings');
+            if (savedSettings) {
+                state.settings = JSON.parse(savedSettings);
+            } else {
+                try {
+                    const userLang = Telegram.WebApp.initDataUnsafe.user.language_code;
+                    if (locales[userLang]) state.settings.lang = userLang;
+                } catch(e) { /* ignore */ }
+            }
+            
+            // Loading simulation
+            let loadProgress = 0;
+            const loadInterval = setInterval(() => {
+                loadProgress += 20;
+                DOMElements.loadingBar.style.width = `${loadProgress}%`;
+                if (loadProgress >= 100) {
+                    clearInterval(loadInterval);
+                    setTimeout(() => {
+                        showScreen(DOMElements.startScreen);
+                    }, 300);
+                }
+            }, 100);
+
+            initSounds();
+            applyLocalization();
+            updateSoundButton();
+            
+            DOMElements.startButton.onclick = () => startLevel(0);
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.onclick = () => {
+                    state.settings.lang = btn.dataset.lang;
+                    localStorage.setItem('biglife_settings', JSON.stringify(state.settings));
+                    applyLocalization();
+                };
+            });
+            
+            DOMElements.grid.addEventListener('pointerdown', handleTileClick);
+            
+            DOMElements.soundToggle.onclick = () => {
+                state.settings.sound = !state.settings.sound;
+                updateSoundButton();
+                localStorage.setItem('biglife_settings', JSON.stringify(state.settings));
+            };
+            
+            DOMElements.closeButton.onclick = () => {
+                try {
+                    Telegram.WebApp.close();
+                } catch (e) {
+                    alert('Closing...');
+                }
+            };
+        }
+        
+        function updateSoundButton() {
+            DOMElements.soundToggle.textContent = state.settings.sound ? '🔊' : '🔇';
+        }
+
+        window.onload = init;
+
+    </script>
+</body>
+</html>
