@@ -330,18 +330,15 @@
 
         // --- GAME ASSETS & CONFIG ---
         const CHARACTERS = {
-            security: {
-                src: 'https://files.catbox.moe/c2srvj.png',
-                prefix: 'sec_l'
-            },
-            operator: {
-                src: 'https://files.catbox.moe/5aelf0.png',
-                prefix: 'op_l'
-            },
-            producer: {
-                src: 'https://files.catbox.moe/rr9dt2.png',
-                prefix: 'prod_l'
-            }
+            security: { src: 'https://files.catbox.moe/c2srvj.png', prefix: 'sec_l' },
+            operator: { src: 'https://files.catbox.moe/5aelf0.png', prefix: 'op_l' },
+            producer: { src: 'https://files.catbox.moe/rr9dt2.png', prefix: 'prod_l' }
+        };
+
+        const TRANSITION_IMAGES = {
+            level1: 'https://files.catbox.moe/2thq5e.png',
+            level2: 'https://files.catbox.moe/2dk3q4.png',
+            final: 'https://files.catbox.moe/nlz0wc.png'
         };
 
         const BONUS_CHARACTER_IMAGE = 'https://files.catbox.moe/u0s6lo.png';
@@ -422,17 +419,9 @@
                 fail_moves: "Закінчилися ходи. Спробуйте ще раз!", fail_time: "Час вийшов. Спробуйте ще раз!",
                 next_level: "Наступний рівень", replay: "Зіграти ще раз", watch_concert: "Дивитись концерт",
                 bonus_points: "Вітаємо! Ви отримали {points} додаткових балів!",
-                sec_l1_start: "Черга рухається. Покажи, що ти свій — збери квитки!", 
-                sec_l1_progress: "Непогано, але ще не досить. Проходь далі!",
-                sec_l1_ok: "Добре! Проходь на наступний пункт контролю.",
                 sec_l1_pass: "Прохід дозволено!",
-                op_l2_start: "Ваш квиток, будь ласка. Зніміть блоки, щоб я його перевірив.",
-                op_l2_progress: "Йде сканування... Розблокуйте більше фішок для підтвердження.",
-                op_l2_ok: "Все гаразд! Ваш квиток справжній. Ласкаво просимо!",
                 op_l2_pass: "Квиток валідний!",
-                prod_l3_start: "Так-так, це я. Продюсер. Вразиш мене - пройдеш за куліси. Час пішов!",
-                prod_l3_progress: "Непогано, але я бачив і краще. Годинник цокає!",
-                prod_l3_ok: "Ти талант! Ласкаво просимо на Backstage!",
+                prod_l3_pass: "Ти талант! Ласкаво просимо!",
                 win_final: "Ласкаво просимо на Backstage, зірка! Ти це зробив!",
             },
             en: {
@@ -443,17 +432,9 @@
                 fail_moves: "Out of moves. Try again!", fail_time: "Time's up. Try again!",
                 next_level: "Next Level", replay: "Replay", watch_concert: "Watch the Concert",
                 bonus_points: "Congratulations! You received {points} bonus points!",
-                sec_l1_start: "The queue is moving. Show you belong—collect tickets!",
-                sec_l1_progress: "Not bad, but not quite there. Keep going!",
-                sec_l1_ok: "Alright! Proceed to the next checkpoint.",
                 sec_l1_pass: "You may pass!",
-                op_l2_start: "Your ticket, please. Remove the locks so I can scan it.",
-                op_l2_progress: "Scanning... Unlock more tiles to confirm.",
-                op_l2_ok: "All clear! Your ticket is valid. Welcome!",
                 op_l2_pass: "Ticket is valid!",
-                prod_l3_start: "Yes, it's me. The producer. Impress me, and you're backstage. Time's ticking!",
-                prod_l3_progress: "Not bad, but I've seen better. The clock is ticking!",
-                prod_l3_ok: "You're a talent! Welcome to the Backstage!",
+                prod_l3_pass: "You're a talent! Welcome!",
                 win_final: "Welcome to the Backstage, star! You made it!",
             },
             ru: {
@@ -464,17 +445,9 @@
                 fail_moves: "Закончились ходы. Попробуйте еще раз!", fail_time: "Время вышло. Попробуйте еще раз!",
                 next_level: "Следующий уровень", replay: "Сыграть еще раз", watch_concert: "Смотреть концерт",
                 bonus_points: "Поздравляем! Вы получили {points} дополнительных очков!",
-                sec_l1_start: "Очередь движется. Покажи, что ты свой — собери билеты!",
-                sec_l1_progress: "Неплохо, но пока недостаточно. Продолжай!",
-                sec_l1_ok: "Хорошо! Проходи на следующий пункт контроля.",
                 sec_l1_pass: "Проход разрешен!",
-                op_l2_start: "Ваш билет, пожалуйста. Снимите блоки, чтобы я его проверил.",
-                op_l2_progress: "Идет сканирование... Разблокируйте больше фишек для подтверждения.",
-                op_l2_ok: "Все в порядке! Ваш билет подлинный. Добро пожаловать!",
                 op_l2_pass: "Билет действителен!",
-                prod_l3_start: "Да-да, это я. Продюсер. Впечатлишь меня - пройдешь за кулисы. Время пошло!",
-                prod_l3_progress: "Неплохо, но я видел и лучше. Часики тикают!",
-                prod_l3_ok: "Ты талант! Добро пожаловать на Backstage!",
+                prod_l3_pass: "Ты талант! Добро пожаловать!",
                 win_final: "Добро пожаловать на Backstage, звезда! Ты это сделал!",
             },
             he: {
@@ -485,17 +458,9 @@
                 fail_moves: "נגמרו הצעדים. נסה שוב!", fail_time: "הזמן נגמר. נסה שוב!",
                 next_level: "שלב הבא", replay: "שחק שוב", watch_concert: "צפה בהופעה",
                 bonus_points: "כל הכבוד! קיבלת {points} נקודות בונוס!",
-                sec_l1_start: "התור מתקדם. הראה שאתה שייך - אסוף כרטיסים!",
-                sec_l1_progress: "לא רע, אבל עדיין לא מספיק. תמשיך הלאה!",
-                sec_l1_ok: "טוב! עבור לנקודת הביקורת הבאה.",
                 sec_l1_pass: "המעבר אושר!",
-                op_l2_start: "הכרטיס שלך, בבקשה. הסר את המנעולים כדי שאוכל לבדוק אותו.",
-                op_l2_progress: "סורק... שחרר עוד אריחים לאישור.",
-                op_l2_ok: "הכל בסדר! הכרטיס שלך תקף. ברוך הבא!",
                 op_l2_pass: "הכרטיס תקף!",
-                prod_l3_start: "כן, כן, זה אני. המפיק. תרשים אותי - ותעבור אל מאחורי הקלעים. הזמן רץ!",
-                prod_l3_progress: "לא רע, אבל ראיתי טובים יותר. השעון מתקתק!",
-                prod_l3_ok: "אתה כישרון! ברוך הבא אל מאחורי הקלעים!",
+                prod_l3_pass: "אתה כישרון! ברוך הבא!",
                 win_final: "ברוך הבא למאחורי הקלעים, כוכב! עשית את זה!",
             },
         };
@@ -525,6 +490,10 @@
             sounds.fail = new Tone.Synth({ oscillator: { type: 'square' }, envelope: { attack: 0.01, decay: 0.4, sustain: 0, release: 0.2 } }).toDestination();
             sounds.unlock = new Tone.Synth({ oscillator: { type: 'sawtooth' }, envelope: { attack: 0.01, decay: 0.1, sustain: 0, release: 0.1 } }).toDestination();
             sounds.bonus = new Tone.Synth({ oscillator: { type: 'sine' }, envelope: { attack: 0.01, decay: 0.2, sustain: 0.1, release: 0.2 } }).toDestination();
+            sounds.crowd = new Tone.Noise("white").toDestination();
+            sounds.crowd.volume.value = -25;
+            const crowdFilter = new Tone.AutoFilter("2n").toDestination().start();
+            sounds.crowd.connect(crowdFilter);
         }
         function playSound(sound) {
             if (!state.settings.sound || !sounds[sound]) return;
@@ -588,8 +557,8 @@
             } else {
                 status = state.score > 0 ? 'angry' : 'idle';
             }
-            updateCharacterPanel(status);
-            DOMElements.characterLine.textContent = t(lineKey);
+            // updateCharacterPanel(status);
+            // DOMElements.characterLine.textContent = t(lineKey);
         }
         
         function showModal({ titleKey, bodyKey, bodyParams, buttons }) {
@@ -610,9 +579,9 @@
         }
         
         function showLevelTransition() {
-            const character = LEVEL_CONFIG[state.currentLevel].character;
-            DOMElements.transitionImage.src = character.src;
-            const textKey = `${character.prefix}${state.currentLevel + 1}_pass`;
+            const transitionKey = `level${state.currentLevel + 1}`;
+            DOMElements.transitionImage.src = TRANSITION_IMAGES[transitionKey];
+            const textKey = LEVEL_CONFIG[state.currentLevel].character.prefix + (state.currentLevel + 1) + "_pass";
             DOMElements.transitionText.textContent = t(textKey);
             DOMElements.levelTransitionScreen.classList.remove('hidden');
             DOMElements.levelTransitionScreen.classList.add('fade-in');
@@ -624,8 +593,8 @@
                     DOMElements.levelTransitionScreen.classList.add('hidden');
                     DOMElements.levelTransitionScreen.classList.remove('fade-out');
                     startLevel(state.currentLevel + 1);
-                }, 500);
-            }, 3000);
+                }, 1000);
+            }, 4000);
         }
 
         function startLevel(levelIndex) {
@@ -658,6 +627,7 @@
                 }, 1000);
             }
 
+            if(state.settings.sound) sounds.crowd.start();
             scheduleBonusCharacter();
         }
         
@@ -1108,6 +1078,7 @@
         function endLevel(isWin) {
             state.isLocked = true;
             clearBonusCharacter();
+            if(sounds.crowd.state === "started") sounds.crowd.stop();
             if (state.timerInterval) clearInterval(state.timerInterval);
             
             if(isWin) {
@@ -1115,11 +1086,20 @@
                 if (state.currentLevel < LEVEL_CONFIG.length - 1) {
                     showLevelTransition();
                 } else {
-                    DOMElements.winVideoContainer.classList.remove('hidden');
-                    DOMElements.winVideo.play();
-                    DOMElements.winVideo.onended = () => {
-                        window.location.href = 'https://big-life.org/';
-                    };
+                    const finalTransitionData = TRANSITION_IMAGES.final;
+                    DOMElements.transitionImage.src = finalTransitionData;
+                    DOMElements.transitionText.textContent = t('prod_l3_pass');
+                    DOMElements.levelTransitionScreen.classList.remove('hidden');
+                    DOMElements.levelTransitionScreen.classList.add('fade-in');
+
+                    setTimeout(() => {
+                        DOMElements.levelTransitionScreen.classList.add('hidden');
+                        DOMElements.winVideoContainer.classList.remove('hidden');
+                        DOMElements.winVideo.play();
+                        DOMElements.winVideo.onended = () => {
+                            window.location.href = 'https://big-life.org/';
+                        };
+                    }, 4000);
                 }
             } else {
                 playSound('fail');
@@ -1176,6 +1156,11 @@
             
             DOMElements.soundToggle.onclick = () => {
                 state.settings.sound = !state.settings.sound;
+                if(state.settings.sound && DOMElements.gameScreen.style.display !== 'none'){
+                    if(sounds.crowd.state !== "started") sounds.crowd.start();
+                } else {
+                     if(sounds.crowd.state === "started") sounds.crowd.stop();
+                }
                 updateSoundButton();
                 localStorage.setItem('biglife_settings', JSON.stringify(state.settings));
             };
