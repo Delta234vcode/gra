@@ -313,6 +313,7 @@
 
         <!-- Win Video Screen --><div id="win-video-container" class="modal-backdrop hidden items-center justify-center">
             <video id="win-video" class="w-full h-auto max-h-full max-w-full" src="https://files.catbox.moe/0rlf1s.mp4" muted playsinline></video>
+            <audio id="win-audio" src="https://files.catbox.moe/493uhj.mp3" preload="auto"></audio>
         </div>
 
     </div>
@@ -387,6 +388,7 @@
             transitionText: document.getElementById('transition-text'),
             winVideoContainer: document.getElementById('win-video-container'),
             winVideo: document.getElementById('win-video'),
+            winAudio: document.getElementById('win-audio'),
         };
 
         // --- GAME STATE ---
@@ -1150,6 +1152,7 @@
                         DOMElements.levelTransitionScreen.classList.add('hidden');
                         DOMElements.winVideoContainer.classList.remove('hidden');
                         DOMElements.winVideo.play();
+                        if (state.settings.sound) DOMElements.winAudio.play();
                         DOMElements.winVideo.onended = () => {
                             window.location.href = 'https://big-life.org/';
                         };
