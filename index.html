@@ -227,12 +227,7 @@
         #game-screen.level-1 { background-image: radial-gradient(circle at top, rgba(139, 92, 246, 0.2) 0%, transparent 40%), linear-gradient(180deg, #1e293b 0%, var(--bg) 100%); }
         #game-screen.level-2 { background-image: radial-gradient(circle at top, rgba(239, 68, 68, 0.2) 0%, transparent 40%), linear-gradient(180deg, #1e293b 0%, var(--bg) 100%); }
         #game-screen.level-3 { background-image: radial-gradient(circle at top, rgba(33, 242, 164, 0.2) 0%, transparent 40%), linear-gradient(180deg, #1e293b 0%, var(--bg) 100%); }
-        #game-screen.win-screen {
-            background-image: url('https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif');
-            background-size: cover;
-            background-position: center;
-        }
-
+        
         /* Custom Security Avatar CSS */
         #character-avatar img {
             width: 100%;
@@ -316,6 +311,10 @@
             </div>
         </div>
 
+        <!-- Win Video Screen --><div id="win-video-container" class="modal-backdrop hidden items-center justify-center">
+            <video id="win-video" class="w-full h-auto max-h-full max-w-full" src="https://files.catbox.moe/0rlf1s.mp4" muted playsinline></video>
+        </div>
+
     </div>
 
     <script type="module">
@@ -336,11 +335,11 @@
                 prefix: 'sec_l'
             },
             operator: {
-                src: 'https://files.catbox.moe/5aelf0.png',
+                src: 'https://files.catbox.moe/u0s6lo.png',
                 prefix: 'op_l'
             },
             producer: {
-                src: 'https://files.catbox.moe/zgk5fv.png',
+                src: 'https://files.catbox.moe/rr9dt2.png',
                 prefix: 'prod_l'
             }
         };
@@ -359,7 +358,7 @@
         const LEVEL_CONFIG = [
             { target: 1000, moves: 25, timer: null, background: 'level-1', character: CHARACTERS.security, locks: 0 },
             { target: 1500, moves: 30, timer: null, background: 'level-2', character: CHARACTERS.operator, locks: 4 },
-            { target: 3000, moves: null, timer: 90, background: 'level-3', character: CHARACTERS.producer, locks: 8 },
+            { target: 3000, moves: null, timer: 150, background: 'level-3', character: CHARACTERS.producer, locks: 8 },
         ];
 
         // --- DOM ELEMENTS ---
@@ -389,6 +388,8 @@
             levelTransitionScreen: document.getElementById('level-transition-screen'),
             transitionImage: document.getElementById('transition-image'),
             transitionText: document.getElementById('transition-text'),
+            winVideoContainer: document.getElementById('win-video-container'),
+            winVideo: document.getElementById('win-video'),
         };
 
         // --- GAME STATE ---
@@ -661,7 +662,7 @@
         }
         
         function setupGrid() {
-            state.gridSize = window.innerWidth < 400 ? 5 : 6;
+            state.gridSize = window.innerWidth < 768 ? 5 : 6;
             DOMElements.grid.style.gridTemplateColumns = `repeat(${state.gridSize}, 1fr)`;
             state.board = [];
             DOMElements.grid.innerHTML = '';
@@ -737,11 +738,13 @@
                 startTile: { r, c, element: startTileEl }
             };
 
+            const SWIPE_THRESHOLD = 40; // Increased threshold for better mobile experience
+
             const handlePointerMove = (moveEvent) => {
                 if (!state.dragState.active) return;
                 const deltaX = moveEvent.clientX - state.dragState.startX;
                 const deltaY = moveEvent.clientY - state.dragState.startY;
-                const SWIPE_THRESHOLD = 20;
+                
 
                 if (Math.abs(deltaX) > SWIPE_THRESHOLD || Math.abs(deltaY) > SWIPE_THRESHOLD) {
                     let { r, c } = state.dragState.startTile;
@@ -1112,19 +1115,11 @@
                 if (state.currentLevel < LEVEL_CONFIG.length - 1) {
                     showLevelTransition();
                 } else {
-                    DOMElements.gameScreen.classList.add('win-screen');
-                    updateCharacterPanel('happy');
-                    DOMElements.characterLine.textContent = t('win_final');
-                    setTimeout(() => {
-                        showModal({
-                            titleKey: 'you_win', bodyKey: 'win_final',
-                            buttons: [
-                                { textKey: 'watch_concert', action: () => { window.open('https://big-life.org/', '_blank'); startLevel(0); }},
-                                { textKey: 'replay', action: () => startLevel(0) }
-                            ]
-                        });
-                        DOMElements.gameScreen.classList.remove('win-screen');
-                    }, 2000);
+                    DOMElements.winVideoContainer.classList.remove('hidden');
+                    DOMElements.winVideo.play();
+                    DOMElements.winVideo.onended = () => {
+                        window.location.href = 'https://big-life.org/';
+                    };
                 }
             } else {
                 playSound('fail');
